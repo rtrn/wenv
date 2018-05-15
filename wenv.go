@@ -58,6 +58,7 @@ import (
 	"regexp"
 	"strings"
 	"syscall"
+	"time"
 )
 
 const helper = "wenvhelper.exe"
@@ -205,9 +206,11 @@ func wenv() int {
 	args = append(args, os.Args...)
 	for i := 0; ; i++ {
 		// WSL randomly throws ENOMEM on execing, so we retry the exec a few times
+		// hopefully this gets fixed in a future WSL build
 		if err := syscall.Exec(cmd, args, os.Environ()); err != nil {
 			if errno, ok := err.(syscall.Errno); ok {
-				if errno == syscall.ENOMEM && i < 10 {
+				if errno == syscall.ENOMEM && i < 1000 {
+					time.Sleep(33 * time.Millisecond)
 					continue
 				}
 			}
@@ -215,7 +218,6 @@ func wenv() int {
 			return 1
 		}
 	}
-	panic("not reached")
 }
 
 func getvaropts() error {
