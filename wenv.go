@@ -19,9 +19,8 @@
 //
 // The following environment variables are ignored: home, path, ifs, IFS, SHELL,
 // prompt, EDITOR, PAGER, BROWSER.
-// And the following variables are converted to Windows paths: PWD, HOME, GOBIN,
-// GOPATH.
-// Finally, ``PATH'' is converted such that it matches its Windows equivalent.
+// And the following variables are converted to Windows paths: HOME, GOBIN.
+// Finally, ``PATH'' and ``GOPATH'' are converted such that they match their Windows equivalent.
 // Every other variable is passed as-is.
 //
 // These can be changed and new rules can be added using the ``WENV'' environment
@@ -83,12 +82,11 @@ var varopts = map[string]varopt{
 	"PAGER":   varIgnore,
 	"BROWSER": varIgnore,
 
-	"PWD":    varConvert,
 	"HOME":   varConvert,
 	"GOBIN":  varConvert,
-	"GOPATH": varConvert,
 
 	"PATH": varPath,
+	"GOPATH": varPath,
 }
 
 func main() {
