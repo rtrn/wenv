@@ -82,10 +82,10 @@ var varopts = map[string]varopt{
 	"PAGER":   varIgnore,
 	"BROWSER": varIgnore,
 
-	"HOME":   varConvert,
-	"GOBIN":  varConvert,
+	"HOME":  varConvert,
+	"GOBIN": varConvert,
 
-	"PATH": varPath,
+	"PATH":   varPath,
 	"GOPATH": varPath,
 }
 
@@ -253,13 +253,18 @@ func getvaropts() error {
 	return nil
 }
 
+var wslRoot string
+
 // convert WSL path to Windows path
 func winpath(path string) (string, error) {
-	re := regexp.MustCompile("^(/mnt)?/([a-z])(/|$)")
+	if wslRoot == "" {
+		getWSLRoot()
+	}
+	re := regexp.MustCompile("^" + wslRoot + "([a-z])(/|$)")
 	match := re.FindStringSubmatch(path)
 	if match != nil {
-		repl := strings.ToUpper(match[2]) + ":"
-		re = regexp.MustCompile("^(/mnt)?/[a-z]")
+		repl := strings.ToUpper(match[1]) + ":"
+		re = regexp.MustCompile("^" + wslRoot + "[a-z]")
 		path = re.ReplaceAllString(path, repl)
 	}
 	path = strings.Replace(path, "/", "\\", -1)
@@ -272,12 +277,39 @@ func winpath(path string) (string, error) {
 
 // convert Windows path to WSL path
 func wslpath(path string) string {
+	if wslRoot == "" {
+		getWSLRoot()
+	}
 	path = strings.Replace(path, "\\", "/", -1)
 	re := regexp.MustCompile("^([A-Za-z]):")
 	match := re.FindStringSubmatch(path)
 	if match != nil {
-		repl := "/mnt/" + strings.ToLower(match[1])
+		repl := wslRoot + strings.ToLower(match[1])
 		path = re.ReplaceAllString(path, repl)
 	}
 	return path
+}
+
+func getWSLRoot() {
+	wslRoot = "/mnt/"
+	b, err := ioutil.ReadFile("/etc/wsl.conf")
+	if err != nil {
+		return
+	}
+	split := strings.Split(string(b), "\n")
+	for _, s := range split {
+		if !strings.Contains(s, "root") {
+			continue
+		}
+		split := strings.Split(s, "=")
+		if len(split) != 2 {
+			return
+		}
+		s = strings.TrimSpace(split[1])
+		if s[0] == '"' {
+			s = s[1 : len(s)-1]
+		}
+		wslRoot = s
+		return
+	}
 }
